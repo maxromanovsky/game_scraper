@@ -1,3 +1,6 @@
+// Code is a modified version of the quickstart code:
+// https://developers.google.com/gmail/api/quickstart/go
+
 package scrape
 
 import (
@@ -7,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -14,10 +18,56 @@ import (
 	"google.golang.org/api/gmail/v1"
 )
 
+const user = "me"
+
 type MailScraper struct {
+	client *gmail.Service
 }
 
-func (*MailScraper) Scrape() {
+func NewMailScraper() MailScraper {
+	return MailScraper{getGmailClient()}
+}
+
+func (s *MailScraper) Scrape() {
+	s.listMessages()
+
+	//r, err := client.Users.Labels.List(user).Do()
+	//if err != nil {
+	//	log.Fatalf("Unable to retrieve labels: %v", err)
+	//}
+	//if len(r.Labels) == 0 {
+	//	fmt.Println("No labels found.")
+	//	return
+	//}
+	//fmt.Println("Labels:")
+	//for _, l := range r.Labels {
+	//	fmt.Printf("- %s\n", l.Name)
+	//}
+}
+
+func (s *MailScraper) listMessages() {
+	r, err := s.client.Users.Messages.List(user).MaxResults(10).Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve messages: %v", err)
+	}
+	for _, m := range  r.Messages {
+		//todo: channel + result?
+		go s.getMessage(m.Id)
+	}
+	time.Sleep(10 * time.Second)
+}
+
+func (s *MailScraper) getMessage(id string) {
+	m, err := s.client.Users.Messages.Get(user, id).Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve message %s: %v", id, err)
+	}
+	for _, h := range m.Payload.Headers {
+		log.Println(h.Name, h.Value)
+	}
+}
+
+func getGmailClient() *gmail.Service {
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
@@ -35,23 +85,8 @@ func (*MailScraper) Scrape() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve Gmail client: %v", err)
 	}
-
-	user := "me"
-	r, err := srv.Users.Labels.List(user).Do()
-	if err != nil {
-		log.Fatalf("Unable to retrieve labels: %v", err)
-	}
-	if len(r.Labels) == 0 {
-		fmt.Println("No labels found.")
-		return
-	}
-	fmt.Println("Labels:")
-	for _, l := range r.Labels {
-		fmt.Printf("- %s\n", l.Name)
-	}
+	return srv
 }
-
-// https://developers.google.com/gmail/api/quickstart/go
 
 // Retrieve a token, saves the token, then returns the token ClientOption.
 func getTokenClientOption(ctx context.Context, config *oauth2.Config) option.ClientOption {
