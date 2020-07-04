@@ -6,7 +6,6 @@ import (
 	"google.golang.org/api/option"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 
 	"golang.org/x/net/context"
@@ -30,9 +29,7 @@ func (*MailScraper) Scrape() {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 
-	//srv, err := gmail.New(client)
 	ctx := context.Background()
-	//client := getClient(config)
 	tokenOpt := getTokenClientOption(ctx, config)
 	srv, err := gmail.NewService(ctx, tokenOpt)
 	if err != nil {
@@ -55,19 +52,6 @@ func (*MailScraper) Scrape() {
 }
 
 // https://developers.google.com/gmail/api/quickstart/go
-
-func getClient(config *oauth2.Config) *http.Client {
-	// The file token.json stores the user's access and refresh tokens, and is
-	// created automatically when the authorization flow completes for the first
-	// time.
-	tokFile := "token.json"
-	tok, err := tokenFromFile(tokFile)
-	if err != nil {
-		tok = getTokenFromWeb(config)
-		saveToken(tokFile, tok)
-	}
-	return config.Client(context.Background(), tok)
-}
 
 // Retrieve a token, saves the token, then returns the token ClientOption.
 func getTokenClientOption(ctx context.Context, config *oauth2.Config) option.ClientOption {
