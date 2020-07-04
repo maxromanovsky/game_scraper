@@ -1,0 +1,10 @@
+Multiple binaries
+Parquet or smth similar
+CLI arg parser
+Logger
+Test on ARM
+Defer to close resources
+Constructor?
+Struct inheritance patterns
+Testing
+Babel
