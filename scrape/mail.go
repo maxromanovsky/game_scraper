@@ -3,6 +3,7 @@ package scrape
 import (
 	"encoding/json"
 	"fmt"
+	"google.golang.org/api/option"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,9 +18,44 @@ import (
 type MailScraper struct {
 }
 
+func (*MailScraper) Scrape() {
+	b, err := ioutil.ReadFile("credentials.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(b, gmail.GmailReadonlyScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+
+	//srv, err := gmail.New(client)
+	ctx := context.Background()
+	//client := getClient(config)
+	tokenOpt := getTokenClientOption(ctx, config)
+	srv, err := gmail.NewService(ctx, tokenOpt)
+	if err != nil {
+		log.Fatalf("Unable to retrieve Gmail client: %v", err)
+	}
+
+	user := "me"
+	r, err := srv.Users.Labels.List(user).Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve labels: %v", err)
+	}
+	if len(r.Labels) == 0 {
+		fmt.Println("No labels found.")
+		return
+	}
+	fmt.Println("Labels:")
+	for _, l := range r.Labels {
+		fmt.Printf("- %s\n", l.Name)
+	}
+}
+
 // https://developers.google.com/gmail/api/quickstart/go
 
-// Retrieve a token, saves the token, then returns the generated client.
 func getClient(config *oauth2.Config) *http.Client {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
@@ -31,6 +67,20 @@ func getClient(config *oauth2.Config) *http.Client {
 		saveToken(tokFile, tok)
 	}
 	return config.Client(context.Background(), tok)
+}
+
+// Retrieve a token, saves the token, then returns the token ClientOption.
+func getTokenClientOption(ctx context.Context, config *oauth2.Config) option.ClientOption {
+	// The file token.json stores the user's access and refresh tokens, and is
+	// created automatically when the authorization flow completes for the first
+	// time.
+	tokFile := "token.json"
+	tok, err := tokenFromFile(tokFile)
+	if err != nil {
+		tok = getTokenFromWeb(config)
+		saveToken(tokFile, tok)
+	}
+	return option.WithTokenSource(config.TokenSource(ctx, tok))
 }
 
 // Request a token from the web, then returns the retrieved token.
@@ -85,38 +135,5 @@ func saveToken(path string, token *oauth2.Token) {
 	err = json.NewEncoder(f).Encode(token)
 	if err != nil {
 		log.Fatalf("Unable to JSON encode token to file: %v", err)
-	}
-}
-
-func (*MailScraper) Scrape() {
-	b, err := ioutil.ReadFile("credentials.json")
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
-
-	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, gmail.GmailReadonlyScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-	client := getClient(config)
-
-	srv, err := gmail.New(client)
-	if err != nil {
-		log.Fatalf("Unable to retrieve Gmail client: %v", err)
-	}
-
-	user := "me"
-	r, err := srv.Users.Labels.List(user).Do()
-	if err != nil {
-		log.Fatalf("Unable to retrieve labels: %v", err)
-	}
-	if len(r.Labels) == 0 {
-		fmt.Println("No labels found.")
-		return
-	}
-	fmt.Println("Labels:")
-	for _, l := range r.Labels {
-		fmt.Printf("- %s\n", l.Name)
 	}
 }
