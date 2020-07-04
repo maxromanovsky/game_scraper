@@ -57,7 +57,12 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			log.Printf("Unable to close token file: %v", err)
+		}
+	}()
 	tok := &oauth2.Token{}
 	err = json.NewDecoder(f).Decode(tok)
 	return tok, err
@@ -70,8 +75,17 @@ func saveToken(path string, token *oauth2.Token) {
 	if err != nil {
 		log.Fatalf("Unable to cache oauth token: %v", err)
 	}
-	defer f.Close()
-	json.NewEncoder(f).Encode(token)
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			log.Printf("Unable to close token file: %v", err)
+		}
+	}()
+
+	err = json.NewEncoder(f).Encode(token)
+	if err != nil {
+		log.Fatalf("Unable to JSON encode token to file: %v", err)
+	}
 }
 
 func (*MailScraper) Scrape() {
