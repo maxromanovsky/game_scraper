@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/maxromanovsky/game_scraper/scrape"
+)
 
 func main() {
 	fmt.Println("Test")
+	scraper := scrape.MailScraper{}
+	scraper.Scrape()
 }
