@@ -1,92 +1,14 @@
-// Code is a modified version of the quickstart code:
-// https://developers.google.com/gmail/api/quickstart/go
-
 package scrape
 
 import (
 	"encoding/json"
 	"fmt"
-	"google.golang.org/api/option"
-	"io/ioutil"
-	"log"
-	"os"
-	"time"
-
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/option"
+	"log"
+	"os"
 )
-
-const user = "me"
-
-type MailScraper struct {
-	client *gmail.Service
-}
-
-func NewMailScraper() MailScraper {
-	return MailScraper{getGmailClient()}
-}
-
-func (s *MailScraper) Scrape() {
-	s.listMessages()
-
-	//r, err := client.Users.Labels.List(user).Do()
-	//if err != nil {
-	//	log.Fatalf("Unable to retrieve labels: %v", err)
-	//}
-	//if len(r.Labels) == 0 {
-	//	fmt.Println("No labels found.")
-	//	return
-	//}
-	//fmt.Println("Labels:")
-	//for _, l := range r.Labels {
-	//	fmt.Printf("- %s\n", l.Name)
-	//}
-}
-
-func (s *MailScraper) listMessages() {
-	r, err := s.client.Users.Messages.List(user).MaxResults(10).Do()
-	if err != nil {
-		log.Fatalf("Unable to retrieve messages: %v", err)
-	}
-	for _, m := range  r.Messages {
-		//todo: channel + result?
-		go s.getMessage(m.Id)
-	}
-	time.Sleep(10 * time.Second)
-}
-
-func (s *MailScraper) getMessage(id string) {
-	m, err := s.client.Users.Messages.Get(user, id).Do()
-	if err != nil {
-		log.Fatalf("Unable to retrieve message %s: %v", id, err)
-	}
-	for _, h := range m.Payload.Headers {
-		log.Println(h.Name, h.Value)
-	}
-}
-
-func getGmailClient() *gmail.Service {
-	b, err := ioutil.ReadFile("credentials.json")
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
-
-	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, gmail.GmailReadonlyScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-
-	ctx := context.Background()
-	tokenOpt := getTokenClientOption(ctx, config)
-	srv, err := gmail.NewService(ctx, tokenOpt)
-	if err != nil {
-		log.Fatalf("Unable to retrieve Gmail client: %v", err)
-	}
-	return srv
-}
 
 // Retrieve a token, saves the token, then returns the token ClientOption.
 func getTokenClientOption(ctx context.Context, config *oauth2.Config) option.ClientOption {
