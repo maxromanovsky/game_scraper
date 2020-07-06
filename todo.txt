@@ -9,4 +9,10 @@ Struct inheritance patterns
 Testing
 Babel
 
+CLI
 https://github.com/prometheus/prometheus/blob/master/cmd/promtool/main.go
+
+Concurrency
+https://medium.com/@matryer/golang-advent-calendar-day-two-starting-and-stopping-things-with-a-signal-channel-f5048161018
+https://www.programming-books.io/essential/go/wait-for-goroutines-to-finish-ea3629ac73bb494283d0c92b2a4f78d1
+https://blog.golang.org/pipelines

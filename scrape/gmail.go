@@ -4,12 +4,14 @@
 package scrape
 
 import (
+	"encoding/base64"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
 	"io/ioutil"
 	"log"
 	"sync"
+	"time"
 )
 
 const user = "me"
@@ -23,8 +25,13 @@ func NewMailScraper() GMailScraper {
 	return GMailScraper{getGmailClient(), sync.WaitGroup{}}
 }
 
-func (s *GMailScraper) Scrape(messages chan<- Message) {
-	r, err := s.client.Users.Messages.List(user).MaxResults(5).Do()
+func (s *GMailScraper) Scrape(messages chan<- EmailMessage) {
+	//from:(gog.com) -newsletter@email.gog.com -newsletter@email2.gog.com -do-not-reply@email.gog.com -do_not_reply@gog.com
+	//from:(do_not_reply@gog.com OR do-not-reply@email.gog.com)
+	//"GOG.com Team" <do_not_reply@gog.com>
+	//"GOG.com Team" <do-not-reply@email.gog.com>
+	filter := "from:(do_not_reply@gog.com OR do-not-reply@email.gog.com)"
+	r, err := s.client.Users.Messages.List(user).Q(filter).MaxResults(1).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve messages: %v", err)
 	}
@@ -38,16 +45,46 @@ func (s *GMailScraper) Scrape(messages chan<- Message) {
 	close(messages)
 }
 
-func (s *GMailScraper) getMessage(id string, messages chan<- Message) {
+func (s *GMailScraper) getMessage(id string, messages chan<- EmailMessage) {
 	defer s.wg.Done()
 	m, err := s.client.Users.Messages.Get(user, id).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve message %s: %v", id, err)
 	}
-	messages <- Message{Id: m.Id}
-	//for _, h := range m.Payload.Headers {
-	//	log.Println(h.Name, h.Value)
-	//}
+
+	if msg, ok := toEmailMessage(m); ok {
+		messages <- *msg
+	}
+}
+
+func toEmailMessage(src *gmail.Message) (*EmailMessage, bool) {
+	m := EmailMessage{Id: src.Id, Raw: src.Raw}
+
+	m.DateReceived = time.Unix(0, src.InternalDate*int64(time.Millisecond))
+
+	for _, h := range src.Payload.Headers {
+		switch h.Name {
+		case "From":
+			m.From = h.Value
+		case "To":
+			m.To = h.Value
+		case "Subject":
+			m.Subject = h.Value
+		}
+	}
+
+	body, err := base64.URLEncoding.DecodeString(src.Payload.Body.Data)
+	if err != nil {
+		log.Printf("Base64 decode error: %v", err)
+		return nil, false
+	}
+	m.Body = string(body)
+
+	//todo check
+	log.Println(src.Id, src.Raw, src.Payload.Body.Data)
+
+	//todo error handling
+	return &m, true
 }
 
 func getGmailClient() *gmail.Service {

@@ -3,10 +3,10 @@ package scrape
 import "time"
 
 type Scraper interface {
-	Scrape(messages chan<- Message)
+	Scrape(messages chan<- EmailMessage)
 }
 
-type Message struct {
-	Id, From, Body string
-	DateReceived   time.Time
+type EmailMessage struct {
+	Id, From, To, Subject, Body, Raw string
+	DateReceived                     time.Time
 }

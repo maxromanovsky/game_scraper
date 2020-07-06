@@ -7,7 +7,7 @@ import (
 
 func main() {
 	scraper := scrape.NewMailScraper()
-	messages := make(chan scrape.Message)
+	messages := make(chan scrape.EmailMessage)
 
 	done := make(chan struct{})
 
