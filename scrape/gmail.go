@@ -47,22 +47,42 @@ func (s *GMailScraper) Scrape(messages chan<- EmailMessage) {
 
 func (s *GMailScraper) getMessage(id string, messages chan<- EmailMessage) {
 	defer s.wg.Done()
-	m, err := s.client.Users.Messages.Get(user, id).Do()
+	full, err := s.client.Users.Messages.Get(user, id).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve message %s: %v", id, err)
 	}
 
-	if msg, ok := toEmailMessage(m); ok {
+	raw, err := s.client.Users.Messages.Get(user, id).Format("raw").Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve message %s: %v", id, err)
+	}
+
+	if msg, ok := toEmailMessage(full, raw); ok {
 		messages <- *msg
 	}
 }
 
-func toEmailMessage(src *gmail.Message) (*EmailMessage, bool) {
-	m := EmailMessage{Id: src.Id, Raw: src.Raw}
+func toEmailMessage(full, raw *gmail.Message) (*EmailMessage, bool) {
+	m := EmailMessage{Id: full.Id, Raw: raw.Raw, Source: GOG}
 
-	m.DateReceived = time.Unix(0, src.InternalDate*int64(time.Millisecond))
+	m.DateReceived = time.Unix(0, full.InternalDate*int64(time.Millisecond))
 
-	for _, h := range src.Payload.Headers {
+	extractMessageHeaders(full, &m)
+	m.Parts = append(m.Parts, *convertBodyPart(full.Payload))
+	for _, p := range full.Payload.Parts {
+		m.Parts = append(m.Parts, *convertBodyPart(p))
+	}
+
+	//todo check
+	//log.Println(full.Id)
+
+	//todo error handling
+	//todo: remove err from signature?
+	return &m, true
+}
+
+func extractMessageHeaders(full *gmail.Message, m *EmailMessage) {
+	for _, h := range full.Payload.Headers {
 		switch h.Name {
 		case "From":
 			m.From = h.Value
@@ -72,19 +92,27 @@ func toEmailMessage(src *gmail.Message) (*EmailMessage, bool) {
 			m.Subject = h.Value
 		}
 	}
+}
 
-	body, err := base64.URLEncoding.DecodeString(src.Payload.Body.Data)
+func convertBodyPart(mp *gmail.MessagePart) *BodyPart {
+	part := BodyPart{PartId: mp.PartId, MimeType: mp.MimeType, Filename: mp.Filename}
+	part.Headers = convertBodyPartHeaders(mp.Headers)
+
+	body, err := base64.URLEncoding.DecodeString(mp.Body.Data)
 	if err != nil {
-		log.Printf("Base64 decode error: %v", err)
-		return nil, false
+		log.Fatalf("Base64 decode error: %v", err)
 	}
-	m.Body = string(body)
+	part.Body = string(body)
 
-	//todo check
-	log.Println(src.Id, src.Raw, src.Payload.Body.Data)
+	return &part
+}
 
-	//todo error handling
-	return &m, true
+func convertBodyPartHeaders(src []*gmail.MessagePartHeader) map[string]string {
+	headers := make(map[string]string)
+	for _, h := range src {
+		headers[h.Name] = h.Value
+	}
+	return headers
 }
 
 func getGmailClient() *gmail.Service {

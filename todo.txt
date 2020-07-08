@@ -11,6 +11,7 @@ Babel
 
 CLI
 https://github.com/prometheus/prometheus/blob/master/cmd/promtool/main.go
+https://github.com/golang-standards/project-layout
 
 Concurrency
 https://medium.com/@matryer/golang-advent-calendar-day-two-starting-and-stopping-things-with-a-signal-channel-f5048161018
