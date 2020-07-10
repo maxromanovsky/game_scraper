@@ -5,40 +5,66 @@ package scrape
 
 import (
 	"encoding/base64"
+	"fmt"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
 	"io/ioutil"
 	"log"
+	"strings"
 	"sync"
 	"time"
 )
 
 const user = "me"
+const maxResults = 100
 
 type GMailScraper struct {
 	client *gmail.Service
 	wg     sync.WaitGroup
+	delay  time.Duration
 }
 
-func NewMailScraper() GMailScraper {
-	return GMailScraper{getGmailClient(), sync.WaitGroup{}}
+func NewMailScraper(delay time.Duration) GMailScraper {
+	return GMailScraper{client: getGmailClient(), delay: delay}
 }
 
-func (s *GMailScraper) Scrape(messages chan<- EmailMessage) {
-	//from:(gog.com) -newsletter@email.gog.com -newsletter@email2.gog.com -do-not-reply@email.gog.com -do_not_reply@gog.com
-	//from:(do_not_reply@gog.com OR do-not-reply@email.gog.com)
-	//"GOG.com Team" <do_not_reply@gog.com>
-	//"GOG.com Team" <do-not-reply@email.gog.com>
-	filter := "from:(do_not_reply@gog.com OR do-not-reply@email.gog.com)"
-	r, err := s.client.Users.Messages.List(user).Q(filter).MaxResults(1).Do()
-	if err != nil {
-		log.Fatalf("Unable to retrieve messages: %v", err)
-	}
+func (s *GMailScraper) Scrape(filters []EmailFilter, messages chan<- EmailMessage) {
+	s.wg = sync.WaitGroup{}
+	for _, f := range filters {
+		filter := createFilter(f)
+		pageToken := ""
+		i := 1
 
-	for _, m := range r.Messages {
-		s.wg.Add(1)
-		go s.getMessage(m.Id, messages)
+		for {
+			r, err := s.client.Users.Messages.List(user).Q(filter).MaxResults(maxResults).PageToken(pageToken).Do()
+			if err != nil {
+				log.Fatalf("Unable to retrieve messages: %v", err)
+			}
+
+			pageToken = r.NextPageToken
+			log.Printf("page #%d, filter: '%s', nextPageToken '%s'", i, filter, pageToken)
+			i++
+
+			if len(r.Messages) == 0 {
+				// No messages
+				break
+			}
+
+			for _, m := range r.Messages {
+				s.wg.Add(1)
+				go s.getMessage(m.Id, messages)
+				// Preventing googleapi: Error 429: Too many concurrent requests for user, rateLimitExceeded
+				// Better approach would be exponential backoff
+				// https://developers.google.com/gmail/api/v1/reference/quota#concurrent_requests
+				time.Sleep(s.delay)
+			}
+
+			if pageToken == "" {
+				// Last page
+				break
+			}
+		}
 	}
 
 	s.wg.Wait()
@@ -47,6 +73,7 @@ func (s *GMailScraper) Scrape(messages chan<- EmailMessage) {
 
 func (s *GMailScraper) getMessage(id string, messages chan<- EmailMessage) {
 	defer s.wg.Done()
+
 	full, err := s.client.Users.Messages.Get(user, id).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve message %s: %v", id, err)
@@ -57,12 +84,21 @@ func (s *GMailScraper) getMessage(id string, messages chan<- EmailMessage) {
 		log.Fatalf("Unable to retrieve message %s: %v", id, err)
 	}
 
-	if msg, ok := toEmailMessage(full, raw); ok {
+	if msg := toEmailMessage(full, raw); msg != nil {
 		messages <- *msg
 	}
 }
 
-func toEmailMessage(full, raw *gmail.Message) (*EmailMessage, bool) {
+func createFilter(f EmailFilter) string {
+	var filters []string
+	if len(f.From) > 0 {
+		//Assumption: all values are not null
+		filters = append(filters, fmt.Sprintf("from:(%s)", strings.Join(f.From, " OR ")))
+	}
+	return strings.Join(filters, " AND ")
+}
+
+func toEmailMessage(full, raw *gmail.Message) *EmailMessage {
 	m := EmailMessage{Id: full.Id, Raw: raw.Raw, Source: GOG}
 
 	m.DateReceived = time.Unix(0, full.InternalDate*int64(time.Millisecond))
@@ -72,13 +108,7 @@ func toEmailMessage(full, raw *gmail.Message) (*EmailMessage, bool) {
 	for _, p := range full.Payload.Parts {
 		m.Parts = append(m.Parts, *convertBodyPart(p))
 	}
-
-	//todo check
-	//log.Println(full.Id)
-
-	//todo error handling
-	//todo: remove err from signature?
-	return &m, true
+	return &m
 }
 
 func extractMessageHeaders(full *gmail.Message, m *EmailMessage) {

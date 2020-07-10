@@ -5,7 +5,7 @@ import (
 )
 
 type Scraper interface {
-	Scrape(messages chan<- EmailMessage)
+	Scrape(filters []EmailFilter, messages chan<- EmailMessage)
 }
 
 type EmailMessage struct {
@@ -26,3 +26,11 @@ const (
 	GOG EmailSource = iota
 	AppleAppStore
 )
+
+type EmailFilter struct {
+	From []string
+}
+
+//from:(gog.com) -newsletter@email.gog.com -newsletter@email2.gog.com -do-not-reply@email.gog.com -do_not_reply@gog.com
+//from:(do_not_reply@gog.com OR do-not-reply@email.gog.com)
+var GmailEmailFilter = EmailFilter{From: []string{"do_not_reply@gog.com", "do-not-reply@email.gog.com"}}
