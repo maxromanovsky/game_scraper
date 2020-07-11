@@ -8,3 +8,10 @@ func ToEmailMessageSchema(message *entity.EmailMessage) *EmailMessageSchema {
 	ems.Subject = message.Subject
 	return ems
 }
+
+func FromEmailMessageSchema(ems *EmailMessageSchema) *entity.EmailMessage {
+	msg := entity.EmailMessage{}
+	msg.Id = ems.Id
+	msg.Subject = ems.Subject
+	return &msg
+}
