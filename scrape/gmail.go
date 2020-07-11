@@ -30,7 +30,7 @@ func NewMailScraper(delay time.Duration) GMailScraper {
 	return GMailScraper{client: getGmailClient(), delay: delay}
 }
 
-func (s *GMailScraper) Scrape(filters []EmailFilter, messages chan<- entity.EmailMessage) {
+func (s *GMailScraper) Scrape(filters []EmailFilter, messages chan<- *entity.EmailMessage) {
 	s.wg = sync.WaitGroup{}
 	for _, f := range filters {
 		filter := createFilter(f)
@@ -72,7 +72,7 @@ func (s *GMailScraper) Scrape(filters []EmailFilter, messages chan<- entity.Emai
 	close(messages)
 }
 
-func (s *GMailScraper) getMessage(id string, messages chan<- entity.EmailMessage) {
+func (s *GMailScraper) getMessage(id string, messages chan<- *entity.EmailMessage) {
 	defer s.wg.Done()
 
 	full, err := s.client.Users.Messages.Get(user, id).Do()
@@ -86,7 +86,7 @@ func (s *GMailScraper) getMessage(id string, messages chan<- entity.EmailMessage
 	}
 
 	if msg := toEmailMessage(full, raw); msg != nil {
-		messages <- *msg
+		messages <- msg
 	}
 }
 

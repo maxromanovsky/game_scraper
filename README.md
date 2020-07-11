@@ -31,6 +31,7 @@ go get -u ./... # all!!!
 go get golang.org/x/net
 go get golang.org/x/oauth2
 go get google.golang.org/api
+go get github.com/actgardner/gogen-avro/v7
 ```
 
 ## Avro
@@ -49,4 +50,5 @@ go install github.com/actgardner/gogen-avro/v7/cmd/...
 ```shell script
 go generate github.com/maxromanovsky/game_scraper/domain/entity
 go build -o build github.com/maxromanovsky/game_scraper/cmd/mail_scraper
+go build -o build github.com/maxromanovsky/game_scraper/cmd/mail_parser
 ```

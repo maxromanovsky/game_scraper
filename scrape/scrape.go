@@ -3,7 +3,7 @@ package scrape
 import "github.com/maxromanovsky/game_scraper/domain/entity"
 
 type Scraper interface {
-	Scrape(filters []EmailFilter, messages chan<- entity.EmailMessage)
+	Scrape(filters []EmailFilter, messages chan<- *entity.EmailMessage)
 }
 
 type EmailFilter struct {

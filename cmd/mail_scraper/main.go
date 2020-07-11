@@ -12,14 +12,14 @@ import (
 
 func main() {
 	scraper := scrape.NewMailScraper(20 * time.Millisecond) //todo: make configurable through CLI param
-	messages := make(chan entity.EmailMessage)
+	messages := make(chan *entity.EmailMessage)
 
 	done := make(chan struct{})
 
 	go func() {
 		defer close(done)
 
-		fileWriter, err := os.Create("email_messages.avro")
+		fileWriter, err := os.Create("email_messages.avro") //todo: configurable via CLI
 		if err != nil {
 			log.Fatalf("Error opening file writer: %v", err)
 		}
@@ -34,7 +34,7 @@ func main() {
 		for m := range messages {
 			log.Printf("%d -> %s, %s", i, m.From, m.Id)
 			i++
-			err = containerWriter.WriteRecord(avro.ToEmailMessageSchema(&m))
+			err = containerWriter.WriteRecord(avro.ToEmailMessageSchema(m))
 			if err != nil {
 				log.Fatalf("Error writing record to file: %v", err)
 			}
