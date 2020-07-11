@@ -1,31 +1,10 @@
 package scrape
 
-import (
-	"time"
-)
+import "github.com/maxromanovsky/game_scraper/domain/entity"
 
 type Scraper interface {
-	Scrape(filters []EmailFilter, messages chan<- EmailMessage)
+	Scrape(filters []EmailFilter, messages chan<- entity.EmailMessage)
 }
-
-type EmailMessage struct {
-	Id, From, To, Subject, Raw string
-	Source                     EmailSource
-	DateReceived               time.Time
-	Parts                      []BodyPart
-}
-
-type BodyPart struct {
-	PartId, MimeType, Filename, Body string
-	Headers                          map[string]string //Assumption: no headers with duplicate names
-}
-
-type EmailSource int
-
-const (
-	GOG EmailSource = iota
-	AppleAppStore
-)
 
 type EmailFilter struct {
 	From []string

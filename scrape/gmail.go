@@ -6,6 +6,7 @@ package scrape
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/maxromanovsky/game_scraper/domain/entity"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
@@ -29,7 +30,7 @@ func NewMailScraper(delay time.Duration) GMailScraper {
 	return GMailScraper{client: getGmailClient(), delay: delay}
 }
 
-func (s *GMailScraper) Scrape(filters []EmailFilter, messages chan<- EmailMessage) {
+func (s *GMailScraper) Scrape(filters []EmailFilter, messages chan<- entity.EmailMessage) {
 	s.wg = sync.WaitGroup{}
 	for _, f := range filters {
 		filter := createFilter(f)
@@ -71,7 +72,7 @@ func (s *GMailScraper) Scrape(filters []EmailFilter, messages chan<- EmailMessag
 	close(messages)
 }
 
-func (s *GMailScraper) getMessage(id string, messages chan<- EmailMessage) {
+func (s *GMailScraper) getMessage(id string, messages chan<- entity.EmailMessage) {
 	defer s.wg.Done()
 
 	full, err := s.client.Users.Messages.Get(user, id).Do()
@@ -98,8 +99,8 @@ func createFilter(f EmailFilter) string {
 	return strings.Join(filters, " AND ")
 }
 
-func toEmailMessage(full, raw *gmail.Message) *EmailMessage {
-	m := EmailMessage{Id: full.Id, Raw: raw.Raw, Source: GOG}
+func toEmailMessage(full, raw *gmail.Message) *entity.EmailMessage {
+	m := entity.EmailMessage{Id: full.Id, Raw: raw.Raw, Source: entity.GOG}
 
 	m.DateReceived = time.Unix(0, full.InternalDate*int64(time.Millisecond))
 
@@ -111,7 +112,7 @@ func toEmailMessage(full, raw *gmail.Message) *EmailMessage {
 	return &m
 }
 
-func extractMessageHeaders(full *gmail.Message, m *EmailMessage) {
+func extractMessageHeaders(full *gmail.Message, m *entity.EmailMessage) {
 	for _, h := range full.Payload.Headers {
 		switch h.Name {
 		case "From":
@@ -124,8 +125,8 @@ func extractMessageHeaders(full *gmail.Message, m *EmailMessage) {
 	}
 }
 
-func convertBodyPart(mp *gmail.MessagePart) *BodyPart {
-	part := BodyPart{PartId: mp.PartId, MimeType: mp.MimeType, Filename: mp.Filename}
+func convertBodyPart(mp *gmail.MessagePart) *entity.BodyPart {
+	part := entity.BodyPart{PartId: mp.PartId, MimeType: mp.MimeType, Filename: mp.Filename}
 	part.Headers = convertBodyPartHeaders(mp.Headers)
 
 	body, err := base64.URLEncoding.DecodeString(mp.Body.Data)

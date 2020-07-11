@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "EmailMessageSchema",
+  "fields": [
+    {"name": "Id", "type": "string"},
+    {"name": "Subject", "type": "string"}
+  ]
+}

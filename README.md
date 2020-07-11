@@ -6,7 +6,7 @@ Purpose is to play around with go, while checking what games that I've purchased
 ## Todo
 - Multiple binaries
     - https://github.com/prometheus/prometheus/blob/master/cmd/promtool/main.go
-    - https://github.com/golang-standards/project-layout
+- https://github.com/golang-standards/project-layout
 - Parquet or smth similar
 - CLI arg parser
 - Logger
@@ -31,4 +31,22 @@ go get -u ./... # all!!!
 go get golang.org/x/net
 go get golang.org/x/oauth2
 go get google.golang.org/api
+```
+
+## Avro
+
+https://github.com/actgardner/gogen-avro#installation
+
+### Install CLI tool
+Run outside of project dir, otherwise `go.mod` will be affected
+```shell script
+go get github.com/actgardner/gogen-avro/v7/cmd/...
+go install github.com/actgardner/gogen-avro/v7/cmd/...
+```
+
+## Build
+
+```shell script
+go generate github.com/maxromanovsky/game_scraper/domain/entity
+go build -o build github.com/maxromanovsky/game_scraper/cmd/mail_scraper
 ```
