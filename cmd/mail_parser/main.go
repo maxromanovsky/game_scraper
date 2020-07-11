@@ -21,7 +21,7 @@ func main() {
 func printMessages(messages <-chan *entity.EmailMessage, done chan<- struct{}) {
 	i := 1
 	for m := range messages {
-		log.Printf("%d -> %s, %s", i, m.Id, m.Subject)
+		log.Printf("%d -> %s, %s, %s", i, m.Id, m.DateReceived, m.Subject)
 		i++
 	}
 	close(done)

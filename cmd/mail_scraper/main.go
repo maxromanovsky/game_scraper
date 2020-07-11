@@ -16,7 +16,7 @@ func main() {
 	go scraper.Scrape([]scrape.EmailFilter{scrape.GmailEmailFilter}, messages)
 
 	repo := avro.NewEmailMessageRepository("email_messages.avro") //todo configurable via CLI
-	go repo.Save(container.Null, 10, messages, func() { close(done) })
+	go repo.Save(container.Deflate, 100, messages, func() { close(done) })
 
 	<-done
 }

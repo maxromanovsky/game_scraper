@@ -75,7 +75,9 @@ func (r *EmailMessageRepository) Load(messages chan<- *entity.EmailMessage, call
 					log.Fatalf("Error closing file: %v", err)
 				}
 				close(messages)
-				callback()
+				if callback != nil {
+					callback()
+				}
 				return
 			}
 			log.Fatalf("Error reading file: %v", err)
