@@ -15,10 +15,22 @@ import (
 type EmailMessageSchema struct {
 	Id string `json:"Id"`
 
+	From string `json:"From"`
+
+	To string `json:"To"`
+
 	Subject string `json:"Subject"`
+
+	Raw string `json:"Raw"`
+
+	DateReceived int64 `json:"DateReceived"`
+
+	Source EmailSource `json:"Source"`
+
+	Parts []*EmailBodyPart `json:"Parts"`
 }
 
-const EmailMessageSchemaAvroCRC64Fingerprint = "\x89k/0!^\xa2w"
+const EmailMessageSchemaAvroCRC64Fingerprint = "\xece\xdc\x02>x;W"
 
 func NewEmailMessageSchema() *EmailMessageSchema {
 	return &EmailMessageSchema{}
@@ -59,7 +71,31 @@ func writeEmailMessageSchema(r *EmailMessageSchema, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	err = vm.WriteString(r.From, w)
+	if err != nil {
+		return err
+	}
+	err = vm.WriteString(r.To, w)
+	if err != nil {
+		return err
+	}
 	err = vm.WriteString(r.Subject, w)
+	if err != nil {
+		return err
+	}
+	err = vm.WriteString(r.Raw, w)
+	if err != nil {
+		return err
+	}
+	err = vm.WriteLong(r.DateReceived, w)
+	if err != nil {
+		return err
+	}
+	err = writeEmailSource(r.Source, w)
+	if err != nil {
+		return err
+	}
+	err = writeArrayEmailBodyPart(r.Parts, w)
 	if err != nil {
 		return err
 	}
@@ -71,7 +107,7 @@ func (r *EmailMessageSchema) Serialize(w io.Writer) error {
 }
 
 func (r *EmailMessageSchema) Schema() string {
-	return "{\"fields\":[{\"name\":\"Id\",\"type\":\"string\"},{\"name\":\"Subject\",\"type\":\"string\"}],\"name\":\"EmailMessageSchema\",\"type\":\"record\"}"
+	return "{\"fields\":[{\"name\":\"Id\",\"type\":\"string\"},{\"name\":\"From\",\"type\":\"string\"},{\"name\":\"To\",\"type\":\"string\"},{\"name\":\"Subject\",\"type\":\"string\"},{\"name\":\"Raw\",\"type\":\"string\"},{\"name\":\"DateReceived\",\"type\":\"long\"},{\"name\":\"Source\",\"type\":{\"name\":\"EmailSource\",\"symbols\":[\"AppleAppStore\",\"GOG\"],\"type\":\"enum\"}},{\"name\":\"Parts\",\"type\":{\"default\":[],\"items\":{\"fields\":[{\"name\":\"PartId\",\"type\":\"string\"},{\"name\":\"MimeType\",\"type\":\"string\"},{\"name\":\"Filename\",\"type\":\"string\"},{\"name\":\"Body\",\"type\":\"string\"},{\"name\":\"Headers\",\"type\":{\"default\":{},\"type\":\"map\",\"values\":\"string\"}}],\"name\":\"EmailBodyPart\",\"type\":\"record\"},\"type\":\"array\"}}],\"name\":\"EmailMessageSchema\",\"type\":\"record\"}"
 }
 
 func (r *EmailMessageSchema) SchemaName() string {
@@ -92,7 +128,21 @@ func (r *EmailMessageSchema) Get(i int) types.Field {
 	case 0:
 		return &types.String{Target: &r.Id}
 	case 1:
+		return &types.String{Target: &r.From}
+	case 2:
+		return &types.String{Target: &r.To}
+	case 3:
 		return &types.String{Target: &r.Subject}
+	case 4:
+		return &types.String{Target: &r.Raw}
+	case 5:
+		return &types.Long{Target: &r.DateReceived}
+	case 6:
+		return &EmailSourceWrapper{Target: &r.Source}
+	case 7:
+		r.Parts = make([]*EmailBodyPart, 0)
+
+		return &ArrayEmailBodyPartWrapper{Target: &r.Parts}
 	}
 	panic("Unknown field index")
 }

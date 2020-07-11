@@ -28,7 +28,12 @@ func (r *EmailMessageRepository) Save(codec container.Codec, recordsPerBlock int
 	}
 
 	for m := range messages {
-		err = containerWriter.WriteRecord(ToEmailMessageSchema(m))
+		record, err := ToEmailMessageSchema(m)
+		if err != nil {
+			log.Fatalf("Error converting message to record: %s", m.Id)
+		}
+
+		err = containerWriter.WriteRecord(record)
 		if err != nil {
 			log.Fatalf("Error writing record to file: %v", err)
 		}
@@ -76,6 +81,10 @@ func (r *EmailMessageRepository) Load(messages chan<- *entity.EmailMessage, call
 			log.Fatalf("Error reading file: %v", err)
 		}
 
-		messages <- FromEmailMessageSchema(record)
+		message, err := FromEmailMessageSchema(record)
+		if err != nil {
+			log.Fatalf("Error converting record to message: %s", record.Id)
+		}
+		messages <- message
 	}
 }

@@ -1,8 +1,30 @@
-{
+[
+  {
+    "type": "record",
+    "name": "EmailMessageSchema",
+    "fields": [
+      {"name": "Id", "type": "string"},
+      {"name": "From", "type": "string"},
+      {"name": "To", "type": "string"},
+      {"name": "Subject", "type": "string"},
+      {"name": "Raw", "type": "string"},
+      {"name": "DateReceived", "type": "long"},
+      {"name":  "Source", "type": "EmailSource"},
+      {"name":  "Parts", "type":  {"type":  "array", "items": "EmailBodyPart", "default": []}}
+    ]
+  }, {
+  "type": "enum",
+  "name": "EmailSource",
+  "symbols": ["AppleAppStore", "GOG"]
+  }, {
   "type": "record",
-  "name": "EmailMessageSchema",
+  "name": "EmailBodyPart",
   "fields": [
-    {"name": "Id", "type": "string"},
-    {"name": "Subject", "type": "string"}
+    {"name":  "PartId", "type": "string"},
+    {"name":  "MimeType", "type": "string"},
+    {"name":  "Filename", "type": "string"},
+    {"name":  "Body", "type": "string"},
+    {"name":  "Headers", "type": {"type": "map", "values": "string", "default": {}}}
   ]
 }
+]
