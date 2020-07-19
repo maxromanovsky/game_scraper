@@ -4,12 +4,6 @@ Warning: this is a pet project :)
 Purpose is to play around with go, while checking what games that I've purchased on certain marketplaces (e.g. gog.com) disappeared from my account.
 
 ```
-Items on your wishlist are now discounted!
-Produkty z Twojej listy życzeń zostały przecenione!
-A game you’ve been waiting for is now available on GOG.com
-A gift for you!
-Otrzymujesz prezent!
-Hey, your free game has arrived!
 
 Your order # xx is complete!
 Twoje zamówienie nr xx zostało zrealizowane!
@@ -61,6 +55,7 @@ go install github.com/actgardner/gogen-avro/v7/cmd/...
 
 ```shell script
 go generate github.com/maxromanovsky/game_scraper/domain/entity
+go test github.com/maxromanovsky/game_scraper/filter
 go build -o build github.com/maxromanovsky/game_scraper/cmd/mail_scraper
 go build -o build github.com/maxromanovsky/game_scraper/cmd/mail_parser
 ```

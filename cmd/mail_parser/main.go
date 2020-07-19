@@ -14,7 +14,7 @@ func main() {
 	repo := avro.NewEmailMessageRepository("email_messages.avro") //todo: configurable via CLI
 	go repo.Load(messages, nil)
 
-	filters := filter.NewChain(false, filter.NewSubjectRegexFilter())
+	filters := filter.NewChain(true, filter.NewGogSubjectRegex())
 
 	go filterMessages(filters, messages, done)
 

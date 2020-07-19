@@ -6,9 +6,15 @@ import (
 	"testing"
 )
 
+// Test is incomplete. Whole reason of implementing the test was to play around with go test
+
 type Stub struct {
 	res bool
 	err error
+}
+
+func (s *Stub) IsSupported(message *entity.EmailMessage) bool {
+	return true
 }
 
 func (s *Stub) Filter(message *entity.EmailMessage) (bool, error) {
@@ -34,14 +40,14 @@ func TestChainTable(t *testing.T) {
 		res      bool
 		err      bool
 	}{
-		{"nil filters nil message match all", false, nil, nil, true, false},
-		{"nil filters nil message match any", true, nil, nil, true, false},
-		{"empty filters nil message match all", false, []Filter{}, nil, true, false},
-		{"empty filters nil message match any", true, []Filter{}, nil, true, false},
-		{"nil filters dummy message match all", false, nil, &dummyMessage, true, false},
-		{"nil filters dummy message match any", true, nil, &dummyMessage, true, false},
-		{"empty filters dummy message match all", false, []Filter{}, &dummyMessage, true, false},
-		{"empty filters dummy message match any", true, []Filter{}, &dummyMessage, true, false},
+		{"nil filters nil message match all", false, nil, nil, false, false},
+		{"nil filters nil message match any", true, nil, nil, false, false},
+		{"empty filters nil message match all", false, []Filter{}, nil, false, false},
+		{"empty filters nil message match any", true, []Filter{}, nil, false, false},
+		{"nil filters dummy message match all", false, nil, &dummyMessage, false, false},
+		{"nil filters dummy message match any", true, nil, &dummyMessage, false, false},
+		{"empty filters dummy message match all", false, []Filter{}, &dummyMessage, false, false},
+		{"empty filters dummy message match any", true, []Filter{}, &dummyMessage, false, false},
 		{"single err filter, message match any - all true", true, []Filter{stubErrTrue}, &dummyMessage, false, true},
 		{"single err filter, message match any - all false", true, []Filter{stubErrFalse}, &dummyMessage, false, true},
 		{"single filter, message match any - all true", true, []Filter{stubTrue}, &dummyMessage, true, false},
