@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/maxromanovsky/game_scraper/domain/entity"
 	"github.com/maxromanovsky/game_scraper/domain/repository/avro"
+	"github.com/maxromanovsky/game_scraper/filter"
 	"log"
 )
 
@@ -13,15 +14,19 @@ func main() {
 	repo := avro.NewEmailMessageRepository("email_messages.avro") //todo: configurable via CLI
 	go repo.Load(messages, nil)
 
-	go printMessages(messages, done)
+	filters := filter.NewChain(false, filter.NewSubjectRegexFilter())
+
+	go filterMessages(filters, messages, done)
 
 	<-done
 }
 
-func printMessages(messages <-chan *entity.EmailMessage, done chan<- struct{}) {
+func filterMessages(filter filter.Filter, messages <-chan *entity.EmailMessage, done chan<- struct{}) {
 	i := 1
 	for m := range messages {
-		log.Printf("%d -> %s, %s, %s", i, m.Id, m.DateReceived, m.Subject)
+		if res, err := filter.Filter(m); err == nil && res {
+			log.Printf("%d -> %s, %s, %s", i, m.Id, m.DateReceived, m.Subject)
+		}
 		i++
 	}
 	close(done)
