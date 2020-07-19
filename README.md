@@ -24,6 +24,7 @@ https://www.gog.com/email/preview/[a-z0-9]
 - Test on ARM
 - Testing
 - Bazel build
+- https://medium.com/a-journey-with-go/go-vet-command-is-more-powerful-than-you-think-563e9fdec2f5
 - Upgrade dependencies:
     - https://golang.cafe/blog/upgrade-dependencies-golang.html
     - https://github.com/golang/go/wiki/Modules#how-to-upgrade-and-downgrade-dependencies

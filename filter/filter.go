@@ -16,10 +16,12 @@ func NewChain(matchAny bool, filters ...Filter) *Chain {
 	return &Chain{matchAny: matchAny, filters: filters}
 }
 
-//todo: test
+// Lazy evaluation is used. Not all filters are executed if conditions are met.
 func (cf *Chain) Filter(message *entity.EmailMessage) (bool, error) {
+	res := true
+	var err error = nil
 	for _, f := range cf.filters {
-		res, err := f.Filter(message)
+		res, err = f.Filter(message)
 		switch {
 		case err != nil:
 			return false, err
@@ -29,5 +31,5 @@ func (cf *Chain) Filter(message *entity.EmailMessage) (bool, error) {
 			return false, nil
 		}
 	}
-	return true, nil
+	return res, nil
 }
